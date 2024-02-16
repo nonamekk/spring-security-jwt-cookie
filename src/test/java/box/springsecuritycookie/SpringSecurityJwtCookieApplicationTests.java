@@ -102,11 +102,16 @@ class SpringSecurityJwtCookieApplicationTests {
 		RegistrationRequest registrationRequest = new RegistrationRequest(email, password, field);
 		String registrationRequestBody = objectMapper.writeValueAsString(registrationRequest);
 
-		ResultActions returnResult = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/auth/registration")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(registrationRequestBody)
-				)
-				.andExpect(MockMvcResultMatchers.status().isNoContent());
+//		ResultActions returnResult =
+		mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/auth/registration")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(registrationRequestBody)
+		)
+		.andExpect(MockMvcResultMatchers.status().isNoContent());
+
+		// Clean up
+		Ticket ticketToDelete = adminControlsService.getTicket(field);
+		adminControlsService.deleteTicket(ticketToDelete.getId());
 	}
 
 
@@ -138,23 +143,7 @@ class SpringSecurityJwtCookieApplicationTests {
 	}
 
 	@Test
-	public void testTicketCreation() throws Exception {
-		NewTicketCreationRequest newTicketRequest = new NewTicketCreationRequest(Role.ADMIN, 2);
-		String requestBody = objectMapper.writeValueAsString(newTicketRequest);
-
-		String field = obtainParameter(
-				"admin@admin.com",
-				"admin",
-				requestBody,
-				"/api/v1/admin/controls/create_ticket",
-				"secret"
-		);
-
-		assertNotNull(field);
-	}
-
-	@Test
-	public void testDeleteTicket() throws Exception {
+	public void testTicketCreationAndDeletion() throws Exception {
 		NewTicketCreationRequest newTicketRequest = new NewTicketCreationRequest(Role.ADMIN, 2);
 		String requestBody = objectMapper.writeValueAsString(newTicketRequest);
 
