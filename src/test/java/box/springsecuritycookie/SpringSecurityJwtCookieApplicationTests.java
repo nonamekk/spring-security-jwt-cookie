@@ -1,9 +1,13 @@
 package box.springsecuritycookie;
 
 import box.springsecuritycookie.entities.Role;
+import box.springsecuritycookie.entities.Ticket;
+import box.springsecuritycookie.entities.User;
 import box.springsecuritycookie.payload.requests.LoginRequest;
 import box.springsecuritycookie.payload.requests.NewTicketCreationRequest;
 import box.springsecuritycookie.payload.requests.RegistrationRequest;
+import box.springsecuritycookie.services.AdminControlsServiceImpl;
+import box.springsecuritycookie.services.UserDetailsServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.Cookie;
@@ -12,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -19,6 +24,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -26,11 +32,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @AutoConfigureMockMvc
 class SpringSecurityJwtCookieApplicationTests {
 
+	private final String userEmail = UUID.randomUUID().toString() + "@email.com";
+
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	AdminControlsServiceImpl adminControlsService;
+
+	@Autowired
+	UserDetailsServiceImpl userDetailsService;
 
 	private String getJwtCookie(String email, String password) throws Exception {
 		LoginRequest loginRequest = new LoginRequest(email, password);
@@ -144,7 +158,7 @@ class SpringSecurityJwtCookieApplicationTests {
 		NewTicketCreationRequest newTicketRequest = new NewTicketCreationRequest(Role.ADMIN, 2);
 		String requestBody = objectMapper.writeValueAsString(newTicketRequest);
 
-		obtainParameter(
+		String secretField = obtainParameter(
 				"admin@admin.com",
 				"admin",
 				requestBody,
@@ -152,25 +166,26 @@ class SpringSecurityJwtCookieApplicationTests {
 				"secret"
 		);
 
-		deleteByIdAndPath(1L, "/api/v1/admin/controls/ticket")
+		Ticket ticket = adminControlsService.getTicket(secretField);
+
+		deleteByIdAndPath(ticket.getId(), "/api/v1/admin/controls/ticket")
 				.andExpect(MockMvcResultMatchers.status().isNoContent());
 	}
 
 	@Test
 	public void testDeleteAdminByAdmin() throws Exception {
-		deleteByIdAndPath(1L, "/api/v1/admin/controls/ticket")
+		deleteByIdAndPath(1L, "/api/v1/admin/controls/user")
 				.andExpect(MockMvcResultMatchers.status().isBadRequest());
 	}
 
 	@Test
-	public void testRegisterUser() throws Exception {
-		registerUser("test@test.com", "testtest123");
-	}
+	public void testRegisterAndDeleteUser() throws Exception {
+		registerUser(userEmail, "testtest123");
 
-	@Test
-	public void testDeleteUser() throws Exception {
-		registerUser("test@test2.com", "testtest123");
-		deleteByIdAndPath(2L, "/api/v1/admin/controls/user");
+		User user = userDetailsService.loadUserByEmail(userEmail);
+
+
+		deleteByIdAndPath(user.getId(), "/api/v1/admin/controls/user");
 	}
 
 	@Test

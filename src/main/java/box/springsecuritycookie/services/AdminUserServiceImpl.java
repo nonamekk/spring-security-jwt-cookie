@@ -23,7 +23,10 @@ public class AdminUserServiceImpl {
         user.setPassword(encoder.encode(password));
 
         user.setRole(Role.ADMIN);
-        userRepository.save(user);
+
+        if (userRepository.findByEmail(user.getEmail()).isEmpty()) {
+            userRepository.save(user);
+        }
         log.info("User admin is created. Email: " + user.getEmail() + " password: " + password);
     }
 }

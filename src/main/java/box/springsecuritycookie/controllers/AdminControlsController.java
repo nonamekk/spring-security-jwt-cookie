@@ -65,10 +65,6 @@ public class AdminControlsController {
             @CookieValue("__Host-auth-token") String cookie,
             HttpServletRequest request
     ) throws Exception {
-
-//        String reqHeader = request.getHeader("__Host-auth-token");
-
-
         userDetailsService.deleteUser(
                 deleteUserRequest.getId(),
                 jwtUtils.extractSubject(cookie)
